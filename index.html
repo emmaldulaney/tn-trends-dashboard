@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tennessee Trends — KARMA by VIP</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f5ead8;
+  --surface:#ede0c4;
+  --surface2:#e4d4ae;
+  --border:#c8aa7a;
+  --gold:#a85e08;
+  --gold-dim:rgba(168,94,8,0.10);
+  --green:#2a5520;
+  --red:#7a2208;
+  --blue:#1e4a6a;
+  --purple:#4a2a5a;
+  --yellow:#8a6a10;
+  --text:#2c1a08;
+  --muted:#7a5a38;
+  --label:#5a3e20;
+  --cream:#fdf6e8;
+  --bark:#3d2410;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Libre Baskerville',serif; background:var(--bg); color:var(--text); min-height:100vh;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+}
+header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:18px 48px;
+  border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg,rgba(168,94,8,0.08) 0%,transparent 100%);
+}
+.header-left h1 {
+  font-family:'Playfair Display',serif; font-size:36px;
+  letter-spacing:0.5px; color:var(--gold); line-height:1.05; font-style:italic;
+  margin:3px 0 5px;
+}
+.header-left .subtitle {
+  font-size:10px; letter-spacing:2.5px; text-transform:uppercase;
+  color:var(--muted); margin-bottom:0;
+}
+.header-right { display:flex; align-items:center; gap:12px; }
+.date-range {
+  font-family:'DM Mono',monospace; font-size:10px;
+  color:var(--muted); white-space:nowrap; line-height:1.6;
+}
+.tab-btn {
+  display:inline-flex; align-items:center; gap:7px;
+  background:rgba(200,114,10,0.08);
+  border:1.5px solid rgba(200,114,10,0.3);
+  color:var(--muted);
+  font-size:10px; letter-spacing:1.5px; text-transform:uppercase;
+  padding:9px 16px; border-radius:3px; cursor:pointer;
+  font-family:'Libre Baskerville',serif; font-weight:700;
+  transition:all 0.18s; white-space:nowrap;
+}
+.tab-btn:hover {
+  background:rgba(200,114,10,0.15);
+  border-color:rgba(200,114,10,0.6);
+  color:var(--gold);
+}
+.tab-btn.active {
+  background:var(--gold);
+  border-color:var(--gold);
+  color:var(--cream);
+  box-shadow: 0 2px 8px rgba(168,94,8,0.35);
+}
+.tab-btn svg { opacity:0.8; }
+.tab-btn.active svg { opacity:1; }
+/* Tab panels */
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+/* Export button */
+.export-btn {
+  display:inline-flex; align-items:center; gap:7px;
+  background:transparent;
+  border:1.5px solid var(--border);
+  color:var(--muted);
+  font-size:10px; letter-spacing:1.5px; text-transform:uppercase;
+  padding:9px 14px; border-radius:3px; cursor:pointer;
+  font-family:'Libre Baskerville',serif; font-weight:700;
+  transition:all 0.18s; white-space:nowrap; margin-left:6px;
+}
+.export-btn:hover {
+  border-color:var(--gold); color:var(--gold);
+  background:rgba(168,94,8,0.06);
+}
+/* Print styles */
+@media print {
+  header { padding:14px 32px; }
+  .tab-nav, .export-btn { display:none !important; }
+  .tab-panel { display:block !important; }
+  #tab-map { margin-top:28px; page-break-before:always; }
+  #tab-focus { margin-top:28px; page-break-before:always; }
+  .info-banner { display:none; }
+  main { padding:16px 32px; }
+  body { background:white !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .card, .focus-card, .yoy-block { box-shadow:none; }
+  canvas { max-width:100%; }
+}
+.map-btn svg { flex-shrink:0; }
+main { padding:28px 48px; }
+.info-banner {
+  background:rgba(75,158,232,0.07); border:1px solid rgba(75,158,232,0.2);
+  border-left:3px solid var(--blue); padding:12px 20px; margin-bottom:24px;
+  font-size:12px; color:var(--label); line-height:1.6;
+}
+.info-banner strong { color:var(--gold); }
+.kpi-row { display:grid; grid-template-columns:repeat(6,1fr); gap:14px; margin-bottom:24px; }
+.kpi {
+  background:var(--surface); border:1px solid var(--border);
+  border-top:2px solid transparent; padding:18px 18px 14px;
+}
+.kpi.gold { border-top-color:var(--gold); }
+.kpi.blue { border-top-color:var(--blue); }
+.kpi.purple { border-top-color:var(--purple); }
+.kpi.green { border-top-color:var(--green); }
+.kpi.red { border-top-color:var(--red); }
+.kpi.dynamic { border-top-color:var(--green); }
+.kpi-label { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--label); margin-bottom:8px; }
+.kpi-value { font-family:'Playfair Display',serif; font-size:34px; letter-spacing:0px; line-height:1; }
+.kpi.gold .kpi-value { color:var(--gold); } .kpi.blue .kpi-value { color:var(--blue); }
+.kpi.purple .kpi-value { color:var(--purple); } .kpi.green .kpi-value { color:var(--green); }
+.kpi.red .kpi-value { color:var(--red); } .kpi.dynamic .kpi-value { color:var(--green); }
+.kpi-sub { font-size:10px; color:var(--muted); margin-top:4px; }
+.grid-3-1 { display:grid; grid-template-columns:1.65fr 1fr; gap:16px; margin-bottom:16px; }
+.card { background:var(--surface); border:1px solid var(--border); padding:22px; }
+.card-title {
+  font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--label);
+  margin-bottom:18px; display:flex; align-items:center; gap:10px;
+}
+.card-title::after { content:''; flex:1; height:1px; background:var(--border); }
+.donut-wrap { display:flex; flex-direction:column; align-items:center; gap:16px; width:100%; }
+.donut-canvas-wrap { position:relative; width:200px; height:200px; margin:0 auto; }
+.donut-center { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; pointer-events:none; }
+.donut-center-num { font-family:'Playfair Display',serif; font-size:34px; color:var(--text); line-height:1; }
+.donut-center-label { font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); }
+.legend-items { display:grid; grid-template-columns:1fr 1fr; gap:8px 16px; width:100%; }
+.legend-item { display:flex; align-items:center; gap:10px; font-size:12px; }
+.legend-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.legend-label { color:var(--label); flex:1; }
+.legend-val { font-family:'DM Mono',monospace; font-size:12px; }
+.acct-table { width:100%; border-collapse:collapse; }
+.acct-table thead th {
+  font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--muted);
+  text-align:left; padding:0 8px 10px 0; border-bottom:1px solid var(--border); white-space:nowrap;
+}
+.acct-table thead th:not(:first-child) { text-align:right; }
+.acct-table tbody tr { border-bottom:1px solid rgba(30,39,64,0.5); }
+.acct-table tbody tr:hover { background:var(--surface2); }
+.acct-table tbody td { padding:8px 8px 8px 0; font-size:12px; vertical-align:middle; }
+.acct-table tbody td:not(:first-child) { text-align:right; }
+.acct-name { font-weight:500; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.acct-city { color:var(--muted); font-size:10px; margin-top:1px; }
+.mono { font-family:'DM Mono',monospace; }
+.c-gold { color:var(--gold); } .c-muted { color:var(--muted); }
+.c-green { color:var(--green); } .c-red { color:var(--red); } .c-blue { color:var(--blue); }
+.badge { display:inline-block; padding:2px 7px; font-size:10px; font-family:'DM Mono',monospace; border-radius:2px; }
+.badge-new  { background:rgba(75,158,232,0.15); color:var(--blue); }
+.badge-up   { background:rgba(61,214,140,0.12); color:var(--green); }
+.badge-down { background:rgba(240,91,91,0.12);  color:var(--red); }
+.badge-flat { background:rgba(90,100,128,0.15); color:var(--muted); }
+.yoy-wrap { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; }
+.yoy-block { background:var(--cream); border:1px solid var(--border); border-left:3px solid var(--gold); color:var(--text); padding:16px; box-shadow:0 1px 3px rgba(61,36,16,0.08); }
+.yoy-block-label { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:7px; }
+.yoy-block-val { font-family:'Playfair Display',serif; font-size:22px; line-height:1; margin-bottom:3px; }
+.yoy-block-note { font-size:10px; color:var(--muted); }
+footer {
+  padding:20px 48px; border-top:1px solid var(--border);
+  display:flex; justify-content:space-between; align-items:center; margin-top:8px;
+}
+.footer-brand { font-family:'Playfair Display',serif; letter-spacing:3px; font-size:13px; color:var(--muted); }
+.footer-note { font-size:11px; color:var(--muted); }
+
+/* ── FOCUS ACCOUNTS ── */
+.focus-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin-bottom:0;
+}
+.focus-card {
+  background:var(--cream);
+  border:1px solid var(--border);
+  padding:22px;
+}
+.focus-card-title {
+  font-size:10px; letter-spacing:2.5px; text-transform:uppercase;
+  color:var(--label); margin-bottom:6px;
+  display:flex; align-items:center; gap:10px;
+}
+.focus-card-title::after { content:''; flex:1; height:1px; background:var(--border); }
+.focus-card-sub {
+  font-size:11px; color:var(--muted); margin-bottom:16px; font-style:italic;
+}
+.focus-table { width:100%; border-collapse:collapse; }
+.focus-table thead th {
+  font-size:9px; letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--muted); text-align:left; padding:0 6px 10px 0;
+  border-bottom:1px solid var(--border);
+}
+.focus-table thead th:not(:first-child) { text-align:right; }
+.focus-table tbody tr {
+  border-bottom:1px solid rgba(200,170,122,0.3);
+  transition:background 0.12s;
+}
+.focus-table tbody tr:hover { background:var(--surface); }
+.focus-table tbody td {
+  padding:8px 6px 8px 0; font-size:12px; vertical-align:middle;
+}
+.focus-table tbody td:not(:first-child) { text-align:right; }
+.focus-acct-name {
+  font-weight:600; color:var(--text);
+  max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.focus-acct-city { font-size:10px; color:var(--muted); margin-top:1px; }
+.pill {
+  display:inline-block; padding:2px 7px;
+  font-family:'DM Mono',monospace; font-size:10px; border-radius:2px;
+}
+.pill-red   { background:rgba(122,34,8,0.12);  color:#7a2208; }
+.pill-dark  { background:rgba(44,26,8,0.10);   color:var(--bark); }
+.rank-num {
+  font-family:'DM Mono',monospace; font-size:11px;
+  color:var(--muted); width:20px; display:inline-block; flex-shrink:0;
+}
+canvas { display:block; }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <div class="subtitle">KARMA by VIP &nbsp;·&nbsp; Market Intelligence</div>
+    <h1>Tennessee Trends</h1>
+    <div class="date-range">
+      2026 YTD (Jan 1 – Apr 6) &nbsp;<span style="opacity:0.5;">|</span>&nbsp; vs. 2025 Same Period (96 days, scaled)
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab('overview', this)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Overview
+      </button>
+      <button class="tab-btn" onclick="switchTab('map', this)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+        Regional Map
+      </button>
+      <button class="tab-btn" onclick="switchTab('focus', this)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Focus Accounts
+      </button>
+    </div>
+    <button class="export-btn" onclick="exportPDF()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Export PDF
+    </button>
+  </div>
+</header>
+
+<main>
+
+<!-- ══ TAB: OVERVIEW ══ -->
+<div id="tab-overview" class="tab-panel active">
+  <div class="info-banner">
+    <strong>Same-Period Comparison:</strong>
+    2026 YTD (96 days) vs 2025 scaled to the same 96 days
+    (26.3% of the year). Prior-year same-period estimate:
+    <strong>262.16 cases</strong> (from 996.75 full-year).
+    Recalculates automatically each run.
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi gold">
+      <div class="kpi-label">2026 YTD Cases</div>
+      <div class="kpi-value">275.67</div>
+      <div class="kpi-sub">Jan 1 – April 6, 2026</div>
+    </div>
+    <div class="kpi blue">
+      <div class="kpi-label">2025 Same Period</div>
+      <div class="kpi-value">262.16</div>
+      <div class="kpi-sub">Scaled to 96 days</div>
+    </div>
+    <div class="kpi dynamic">
+      <div class="kpi-label">Variance (Cases)</div>
+      <div class="kpi-value">+13.51</div>
+      <div class="kpi-sub">+5.2% vs same period</div>
+    </div>
+    <div class="kpi purple">
+      <div class="kpi-label">Total Accounts</div>
+      <div class="kpi-value">294</div>
+      <div class="kpi-sub">Retail universe</div>
+    </div>
+    <div class="kpi green">
+      <div class="kpi-label">New Accounts</div>
+      <div class="kpi-value">34</div>
+      <div class="kpi-sub">No prior-year activity</div>
+    </div>
+    <div class="kpi red">
+      <div class="kpi-label">Declining</div>
+      <div class="kpi-value">222</div>
+      <div class="kpi-sub">vs same period 2025</div>
+    </div>
+  </div>
+
+  <div class="grid-3-1">
+    <div class="card">
+      <div class="card-title">2026 YTD vs 2025 Same Period — Top Cities</div>
+      <canvas id="cityChart" height="230"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Account Mix</div>
+      <div class="donut-wrap">
+        <div class="donut-canvas-wrap">
+          <canvas id="donutChart" width="200" height="200"></canvas>
+          <div class="donut-center">
+            <div class="donut-center-num">294</div>
+            <div class="donut-center-label">Accounts</div>
+          </div>
+        </div>
+        <div class="legend-items">
+          <div class="legend-item"><div class="legend-dot" style="background:#8b2e0a"></div><span class="legend-label">Declining</span><span class="legend-val c-red">222</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#2d5a7a"></div><span class="legend-label">New (No Prior)</span><span class="legend-val c-blue">34</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#3a6b2e"></div><span class="legend-label">Growing</span><span class="legend-val c-green">38</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#3d2410"></div><span class="legend-label">Flat / Zero</span><span class="legend-val c-muted">0</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-title">Top 15 Accounts — 2026 YTD vs 2025 Same Period</div>
+    <div style="overflow-x:auto;">
+      <table class="acct-table">
+        <thead><tr>
+          <th style="width:220px;">Account</th><th>City</th>
+          <th>2026 Cases</th><th>2025 Same Period</th><th>Change</th>
+        </tr></thead>
+        <tbody id="acctTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:0;">
+    <div class="card-title">State-Level Highlights</div>
+    <div class="yoy-wrap">
+      <div class="yoy-block"><div class="yoy-block-label">Top City 2026</div><div class="yoy-block-val" style="color:var(--gold)">Nashville</div><div class="yoy-block-note">122.2 cases YTD · 34 accounts</div></div>
+      <div class="yoy-block"><div class="yoy-block-label">Most Accounts</div><div class="yoy-block-val" style="color:var(--blue)">Knoxville</div><div class="yoy-block-note">41 tracked retail accounts</div></div>
+      <div class="yoy-block"><div class="yoy-block-label">Growing City</div><div class="yoy-block-val" style="color:var(--green)">Farragut</div><div class="yoy-block-note">+402% vs same period</div></div>
+      <div class="yoy-block"><div class="yoy-block-label">Biggest City Drop</div><div class="yoy-block-val" style="color:var(--red)">Kingsport</div><div class="yoy-block-note">–73% vs same period</div></div>
+      <div class="yoy-block"><div class="yoy-block-label">Top New Account</div><div class="yoy-block-val" style="color:var(--purple)">Lipman Co</div><div class="yoy-block-note">77.7 cases · Nashville · NEW</div></div>
+      <div class="yoy-block"><div class="yoy-block-label">Top Grower %</div><div class="yoy-block-val" style="color:var(--green)">+300%</div><div class="yoy-block-note">Cedar Bluff Wine & Spirit</div></div>
+    </div>
+  </div>
+
+</div><!-- end tab-overview -->
+
+<!-- ══ TAB: REGIONAL MAP ══ -->
+<div id="tab-map" class="tab-panel">
+  <div id="tn-map-container" style="padding:0;"></div>
+</div><!-- end tab-map -->
+
+<!-- ══ TAB: FOCUS ACCOUNTS ══ -->
+<div id="tab-focus" class="tab-panel">
+  <!-- ── ACCOUNTS TO FOCUS ON ── -->
+  <div class="card" style="margin-bottom:0; margin-top:16px;">
+    <div class="card-title">Accounts to Focus On</div>
+    <div class="focus-grid">
+
+      <!-- GONE DARK -->
+      <div class="focus-card">
+        <div class="focus-card-title">Gone Dark</div>
+        <div class="focus-card-sub">Had 2025 activity · Zero cases in 2026 YTD</div>
+        <table class="focus-table">
+          <thead><tr>
+            <th>Account</th>
+            <th>2025 Est.</th>
+            <th>Status</th>
+          </tr></thead>
+          <tbody id="goneDarkBody"></tbody>
+        </table>
+      </div>
+
+      <!-- BIGGEST DECLINERS -->
+      <div class="focus-card">
+        <div class="focus-card-title">Biggest Decliners</div>
+        <div class="focus-card-sub">Active both years · Largest case drop vs same period</div>
+        <table class="focus-table">
+          <thead><tr>
+            <th>Account</th>
+            <th>Now</th>
+            <th>Prior</th>
+            <th>Drop</th>
+          </tr></thead>
+          <tbody id="declinersBody"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- end tab-focus -->
+
+</main>
+
+<footer>
+  <div class="footer-brand">KARMA by VIP &nbsp;·&nbsp; Tennessee</div>
+  <div class="footer-note">Snapshot: April 6, 2026 &nbsp;·&nbsp; 294 accounts &nbsp;·&nbsp; Prior year scaled to 26.3% of 2025</div>
+</footer>
+
+<script>
+const cityData    = [{"city": "NASHVILLE", "cases_26": 122.17, "cases_25": 48.48, "accounts": 34, "variance_cases": 73.68, "variance_pct": 152.0}, {"city": "KNOXVILLE", "cases_26": 53.33, "cases_25": 32.53, "accounts": 41, "variance_cases": 20.81, "variance_pct": 64.0}, {"city": "FRANKLIN", "cases_26": 17.17, "cases_25": 17.67, "accounts": 9, "variance_cases": -0.5, "variance_pct": -2.8}, {"city": "FARRAGUT", "cases_26": 13.0, "cases_25": 2.59, "accounts": 2, "variance_cases": 10.41, "variance_pct": 402.6}, {"city": "MEMPHIS", "cases_26": 10.5, "cases_25": 13.35, "accounts": 16, "variance_cases": -2.85, "variance_pct": -21.3}, {"city": "HENDERSONVILLE", "cases_26": 6.0, "cases_25": 2.89, "accounts": 1, "variance_cases": 3.11, "variance_pct": 107.4}, {"city": "ALCOA", "cases_26": 6.0, "cases_25": 3.55, "accounts": 2, "variance_cases": 2.45, "variance_pct": 69.0}, {"city": "BRENTWOOD", "cases_26": 5.0, "cases_25": 8.72, "accounts": 5, "variance_cases": -3.72, "variance_pct": -42.7}, {"city": "LA FOLLETTE", "cases_26": 5.0, "cases_25": 0.0, "accounts": 2, "variance_cases": 5.0, "variance_pct": NaN}, {"city": "KINGSPORT", "cases_26": 3.33, "cases_25": 12.41, "accounts": 9, "variance_cases": -9.07, "variance_pct": -73.1}, {"city": "SMYRNA", "cases_26": 3.0, "cases_25": 4.69, "accounts": 2, "variance_cases": -1.69, "variance_pct": -36.0}, {"city": "SPRING HILL", "cases_26": 3.0, "cases_25": 4.34, "accounts": 5, "variance_cases": -1.34, "variance_pct": -30.9}];
+const topAccounts = [{"account": "LIPMAN CO WHOLESALE #12559", "city": "NASHVILLE", "cases26": 77.67, "cases25": 0.0, "pct": "NEW"}, {"account": "THE FINCH", "city": "NASHVILLE", "cases26": 16.0, "cases25": 17.36, "pct": "-7.8%"}, {"account": "COOL SPRINGS WINE & SPIRITS", "city": "FRANKLIN", "cases26": 10.0, "cases25": 7.36, "pct": "+35.8%"}, {"account": "GAYLORD HOTELS #BNAGO", "city": "NASHVILLE", "cases26": 8.5, "cases25": 0.0, "pct": "NEW"}, {"account": "FRONTIER PACKAGE", "city": "KNOXVILLE", "cases26": 7.0, "cases25": 0.0, "pct": "NEW"}, {"account": "TOTAL WINE & MORE #2001", "city": "FARRAGUT", "cases26": 7.0, "cases25": 2.59, "pct": "+170.7%"}, {"account": "THE STATION", "city": "MEMPHIS", "cases26": 6.5, "cases25": 0.0, "pct": "NEW"}, {"account": "BOBS PACKAGE STORE", "city": "KNOXVILLE", "cases26": 6.0, "cases25": 1.05, "pct": "+470.3%"}, {"account": "CITY FARMS WINE & SPIRITS", "city": "ALCOA", "cases26": 6.0, "cases25": 1.53, "pct": "+291.1%"}, {"account": "CAMPBELL STATION WINE & SPIRITS", "city": "FARRAGUT", "cases26": 6.0, "cases25": 0.0, "pct": "NEW"}, {"account": "BLUEGRASS BEVERAGE", "city": "HENDERSONVILLE", "cases26": 6.0, "cases25": 2.89, "pct": "+107.4%"}, {"account": "MUSIC VALLEY WINE & SPIRITS", "city": "NASHVILLE", "cases26": 6.0, "cases25": 0.53, "pct": "+1040.6%"}, {"account": "DS WINE & LIQUOR", "city": "KNOXVILLE", "cases26": 4.0, "cases25": 1.53, "pct": "+160.7%"}, {"account": "CEDAR BLUFF WINE & SPIRIT", "city": "KNOXVILLE", "cases26": 4.0, "cases25": 0.26, "pct": "+1420.8%"}, {"account": "FRANKLIN WINE & SPIRITS", "city": "FRANKLIN", "cases26": 3.67, "cases25": 5.08, "pct": "-27.9%"}];
+
+Chart.defaults.color       = '#5a6480';
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.font.size   = 11;
+Chart.defaults.borderColor = '#1e2740';
+
+// City bar chart
+(function () {
+  const labels = cityData.map(r => r.city.replace(/\b\w/g, c => c.toUpperCase()));
+  new Chart(document.getElementById('cityChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: '2026 YTD (Jan 1 – Apr 6)', data: cityData.map(r => r.cases_26), backgroundColor: 'rgba(168,94,8,0.85)', borderRadius: 2, barPercentage: 0.6, categoryPercentage: 0.75 },
+        { label: '2025 Same Period (96 days, scaled)',   data: cityData.map(r => r.cases_25), backgroundColor: 'rgba(61,36,16,0.3)',  borderRadius: 2, barPercentage: 0.6, categoryPercentage: 0.75 },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position:'top', align:'end', labels:{ boxWidth:10, boxHeight:10, padding:14 } },
+        tooltip: { backgroundColor:'#2c1a08', borderColor:'#3d2e18', borderWidth:1, callbacks:{ label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)} cases` } },
+      },
+      scales: {
+        x: { grid:{ display:false }, ticks:{ maxRotation:35, minRotation:20 } },
+        y: { grid:{ color:'rgba(61,36,16,0.15)' }, ticks:{ callback: v => v.toFixed(0) } },
+      },
+    },
+  });
+})();
+
+// Donut
+(function () {
+  new Chart(document.getElementById('donutChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Declining','New','Growing','Flat'],
+      datasets: [{ data:[222,34,38,0], backgroundColor:['rgba(122,34,8,0.9)','rgba(30,74,106,0.9)','rgba(42,85,32,0.9)','rgba(90,62,32,0.6)'], borderWidth:0, hoverOffset:6 }],
+    },
+    options: { responsive:false, cutout:'70%', plugins:{ legend:{ display:false }, tooltip:{ backgroundColor:'#2c1a08', borderColor:'#8a6040', borderWidth:1, callbacks:{ label: ctx => ` ${ctx.label}: ${ctx.parsed} accounts` } } } },
+  });
+})();
+
+// Accounts table
+(function () {
+  const tbody = document.getElementById('acctTableBody');
+  topAccounts.forEach(r => {
+    const isNew=r.pct==='NEW', isFlat=r.pct==='FLAT', isUp=!isNew&&!isFlat&&r.pct.startsWith('+');
+    const bc = isNew?'badge-new':isFlat?'badge-flat':isUp?'badge-up':'badge-down';
+    const diff=(r.cases26-r.cases25).toFixed(2);
+    const diffStr=parseFloat(diff)>=0?`<span class="c-green">+${diff}</span>`:`<span class="c-red">${diff}</span>`;
+    tbody.insertAdjacentHTML('beforeend',`
+      <tr>
+        <td><div class="acct-name">${r.account}</div><div class="acct-city">${r.city}</div></td>
+        <td class="c-muted" style="font-size:11px;">${r.city}</td>
+        <td class="mono c-gold">${r.cases26.toFixed(2)}</td>
+        <td class="mono c-muted">${r.cases25.toFixed(2)}</td>
+        <td><span class="badge ${bc}">${r.pct}</span></td>
+      </tr>`);
+  });
+})();
+
+// ── PDF Export
+function exportPDF() {
+  // Store current state
+  const activePanels = [...document.querySelectorAll('.tab-panel.active')].map(p => p.id);
+  const activeBtns   = [...document.querySelectorAll('.tab-btn.active')].map(b => b.textContent.trim());
+
+  // Show ALL panels for printing
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('active'));
+
+  // Ensure map is rendered
+  if (!window._mapRendered) {
+    window._mapRendered = true;
+    renderInlineMap();
+  }
+
+  // Set document title for PDF filename
+  const orig = document.title;
+  document.title = 'TN_Trends_April_6_2026';
+
+  // Small delay to let map render, then print
+  setTimeout(() => {
+    window.print();
+    // Restore state after print dialog closes
+    setTimeout(() => {
+      document.title = orig;
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      activePanels.forEach(id => document.getElementById(id)?.classList.add('active'));
+    }, 500);
+  }, 150);
+}
+
+// ── Tab switcher
+function switchTab(name, btn) {
+  // Hide all panels
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  // Deactivate all buttons
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  // Show target panel
+  document.getElementById('tab-' + name).classList.add('active');
+  // Activate button
+  if (btn) btn.classList.add('active');
+  // Lazy-render map on first open
+  if (name === 'map' && !window._mapRendered) {
+    window._mapRendered = true;
+    renderInlineMap();
+  }
+}
+
+// ── Inline map renderer (embeds the regional map SVG + sidebar)
+function renderInlineMap() {
+  const container = document.getElementById('tn-map-container');
+  const tnPathD = `m 260.05717,798.9248 c -11.72881,-0.72695 -63.4655,-1.91872 -114.97041,-2.64841 -83.01794,-1.17613 -113.485054,-2.59683 -116.312999,-5.42383 -1.714188,-1.71412 1.670798,-8.54789 4.23407,-8.54789 1.453115,0 4.108887,-3.09546 5.901674,-6.87874 2.088704,-4.40763 4.921491,-7.26801 7.885915,-7.96227 6.314069,-1.47903 6.700142,-6.00367 1.034214,-12.11732 -5.57441,-6.01498 -5.590692,-6.10775 -1.800837,-10.29543 2.688468,-2.97068 2.611321,-3.56127 -0.92716,-7.09977 -2.122918,-2.1229 -3.859698,-4.54399 -3.859698,-5.38005 0,-0.83632 3.638285,-4.80007 8.084998,-8.80825 4.44678,-4.0082 8.65958,-9.11532 9.361621,-11.34926 0.888417,-2.82659 3.024895,-4.23609 7.02653,-4.6359 7.908703,-0.79005 10.751791,-5.65951 6.22475,-10.66184 -5.551818,-6.13461 -1.798638,-11.45941 11.209042,-15.90244 8.925169,-3.04858 10.834658,-4.416 10.358087,-7.41746 -1.557971,-9.81219 -1.237683,-11.10189 2.90229,-11.6899 4.839893,-0.68738 4.941833,-1.00713 1.883311,-5.90467 -1.923376,-3.07991 -1.563154,-4.99434 2.254682,-11.98344 2.49915,-4.57489 5.61541,-8.72922 6.92486,-9.23175 3.64646,-1.39928 2.89645,-3.79513 -3.2477,-10.37218 -6.913438,-7.40076 -6.309813,-9.95738 2.52693,-10.70414 7.33518,-0.61985 8.43891,-2.25491 4.00621,-5.93375 -3.1667,-2.62821 -0.61432,-7.39855 3.95871,-7.39855 1.72681,0 2.55458,-2.31015 2.55458,-7.13002 0,-8.58514 5.15697,-14.29158 11.4323,-12.65065 2.27535,0.595 5.01477,0.42157 6.08767,-0.38536 1.07295,-0.80692 25.31578,-0.75434 53.87296,0.11689 28.55716,0.8712 62.77009,1.35772 76.02875,1.08116 l 24.10677,-0.50283 -0.63492,-10.66258 -0.63492,-10.66258 h 13.85205 c 10.05063,0 14.48551,0.76332 16.16035,2.78153 2.03727,2.45463 43.69249,2.78156 354.40571,2.78156 215.43988,0 352.10634,0.66831 352.10634,1.72189 0,0.94706 -1.2582,2.98034 -2.7965,4.51816 -1.8942,1.89442 -3.0381,7.76867 -3.5459,18.21243 -0.4124,8.47888 -0.823,16.04209 -0.9126,16.80702 -0.089,0.76491 -4.1953,1.39078 -9.1242,1.39078 -8.13192,0 -9.48074,0.6462 -14.57132,6.98074 -3.08547,3.83945 -6.15942,8.63762 -6.83128,10.66258 -0.67186,2.02496 -2.75379,5.66841 -4.6267,8.09651 -3.05981,3.96686 -5.16741,4.49683 -20.77251,5.22393 l -17.36635,0.80915 -10.73194,11.00174 c -10.91099,11.18552 -12.14803,11.80858 -19.52081,9.83295 -2.88128,-0.77218 -4.17225,-2.51803 -4.17225,-5.64282 0,-4.22537 -0.25772,-4.3444 -3.89188,-1.7989 -4.20825,2.94769 -9.08874,11.17029 -9.08874,15.31277 0,2.94157 -6.61806,3.50882 -8.34463,0.71519 -2.02422,-3.27535 -4.63456,-1.98157 -4.6771,2.31796 -0.0222,2.29478 -1.67303,6.25848 -3.66754,8.80822 -1.99437,2.54975 -3.64476,5.67899 -3.66753,6.95386 -0.0275,1.56012 -3.28194,2.31796 -9.95275,2.31796 -7.55654,0 -10.70916,0.8812 -13.26793,3.70873 -1.84607,2.03979 -4.92225,3.70871 -6.83599,3.70871 -1.91375,0 -3.95733,1.24536 -4.54149,2.76745 -0.58404,1.52208 -6.80432,6.58502 -13.82304,11.2508 -12.44738,8.2749 -13.07761,8.47053 -25.6551,7.95706 -12.67971,-0.51767 -13.00235,-0.41396 -19.48193,6.25809 -5.20249,5.35691 -8.24332,6.90471 -14.45052,7.35551 -6.93076,0.50335 -8.05641,1.2297 -9.50497,6.13404 -0.90393,3.05973 -2.3199,6.91643 -3.14673,8.57035 -0.82683,1.65392 -0.72317,3.78733 0.23037,4.74081 3.51112,3.5111 -8.00563,11.55085 -18.74581,13.08589 l -10.1428,1.44986 -0.44503,7.4017 c -0.24489,4.07087 -1.42133,11.78263 -2.61413,17.13709 l -2.16911,9.7354 -219.90874,-0.30089 c -120.95074,-0.16539 -229.51441,-0.8956 -241.23398,-1.62255 z`;
+  const regions = [{"region": "East TN", "cases26": 83.67, "cases25": 65.58, "variance": 18.09, "pct": 27.6, "accounts": 93, "color": "green", "markets": "Knoxville \u00b7 Farragut \u00b7 Alcoa \u00b7 Chattanooga \u00b7 Cleveland"}, {"region": "Middle TN", "cases26": 167.17, "cases25": 119.72, "variance": 47.45, "pct": 39.6, "accounts": 112, "color": "green", "markets": "Nashville \u00b7 Franklin \u00b7 Brentwood \u00b7 Clarksville \u00b7 Murfreesboro"}, {"region": "Tri-Cities", "cases26": 10.17, "cases25": 43.79, "variance": -33.63, "pct": -76.8, "accounts": 45, "color": "red", "markets": "Johnson City \u00b7 Kingsport \u00b7 Bristol \u00b7 Greeneville \u00b7 Morristown"}, {"region": "West TN", "cases26": 14.67, "cases25": 33.07, "variance": -18.41, "pct": -55.7, "accounts": 44, "color": "red", "markets": "Memphis \u00b7 Germantown \u00b7 Jackson \u00b7 Covington \u00b7 Paris"}];
+  const COLOR = { green:'#3a6b2e', yellow:'#b89020', red:'#8b2e0a' };
+
+  function colorClass(name) {
+    const r = regions.find(x => x.region === name);
+    return r ? r.color : 'red';
+  }
+  function pctStr(name) {
+    const r = regions.find(x => x.region === name);
+    if (!r) return '';
+    return r.pct >= 0 ? '+' + r.pct + '%' : r.pct + '%';
+  }
+  function varStr(name) {
+    const r = regions.find(x => x.region === name);
+    if (!r) return '';
+    return r.variance >= 0 ? '+' + r.variance : '' + r.variance;
+  }
+
+  const S1=385, S2=670, S3=828, TF='translate(150.92,-387.35) scale(0.8228)';
+
+  function makeRegionPath(id, regionName, clipId) {
+    const color = COLOR[colorClass(regionName)];
+    return `<g clip-path="url(#${clipId})">
+      <path transform="${TF}" d="${tnPathD}"
+        fill="${color}" opacity="0.92" style="cursor:pointer"
+        id="${id}"
+        onmouseenter="showMapTooltip(event,'${regionName}')"
+        onmouseleave="hideMapTooltip()"
+        onclick="highlightMapCard('${regionName}')"/>
+    </g>`;
+  }
+
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 300px;gap:0;padding:28px 48px;align-items:start;">
+      <div>
+        <div style="font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--label);margin-bottom:16px;display:flex;align-items:center;gap:10px;">
+          Performance by Region
+          <span style="flex:1;height:1px;background:var(--border);display:block;"></span>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--gold);padding:24px 16px 16px;">
+          <svg id="tn-map-inline" viewBox="0 0 1100 285" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">
+            <defs>
+              <clipPath id="ic-west">  <rect x="0"    y="0" width="${S1}"       height="285"/></clipPath>
+              <clipPath id="ic-mid">   <rect x="${S1}" y="0" width="${S2-S1}"    height="285"/></clipPath>
+              <clipPath id="ic-east">  <rect x="${S2}" y="0" width="${S3-S2}"    height="285"/></clipPath>
+              <clipPath id="ic-tri">   <rect x="${S3}" y="0" width="${1100-S3}"  height="285"/></clipPath>
+              <clipPath id="ic-state"> <path transform="${TF}" d="${tnPathD}"/></clipPath>
+            </defs>
+            ${makeRegionPath('iw','West TN','ic-west')}
+            ${makeRegionPath('im','Middle TN','ic-mid')}
+            ${makeRegionPath('ie','East TN','ic-east')}
+            ${makeRegionPath('it','Tri-Cities','ic-tri')}
+            <path transform="${TF}" d="${tnPathD}" fill="none" stroke="rgba(61,36,16,0.75)" stroke-width="2.5"/>
+            <g clip-path="url(#ic-state)">
+              <line x1="${S1}" y1="0" x2="${S1}" y2="285" stroke="rgba(0,0,0,0.3)" stroke-width="2"/>
+              <line x1="${S2}" y1="0" x2="${S2}" y2="285" stroke="rgba(0,0,0,0.3)" stroke-width="2"/>
+              <line x1="${S3}" y1="0" x2="${S3}" y2="285" stroke="rgba(0,0,0,0.3)" stroke-width="2"/>
+            </g>
+            <text font-family="Playfair Display,serif" font-size="13" font-weight="700" fill="#f2e8cc" text-anchor="middle" x="280" y="155">WEST TN</text>
+            <text font-family="DM Mono,monospace" font-size="12" fill="#f2e8cc" text-anchor="middle" x="280" y="174">${pctStr('West TN')}</text>
+            <text font-family="Playfair Display,serif" font-size="13" font-weight="700" fill="#f2e8cc" text-anchor="middle" x="527" y="148">MIDDLE</text>
+            <text font-family="Playfair Display,serif" font-size="13" font-weight="700" fill="#f2e8cc" text-anchor="middle" x="527" y="168">TENNESSEE</text>
+            <text font-family="DM Mono,monospace" font-size="12" fill="#f2e8cc" text-anchor="middle" x="527" y="187">${pctStr('Middle TN')}</text>
+            <text font-family="Playfair Display,serif" font-size="13" font-weight="700" fill="#f2e8cc" text-anchor="middle" x="749" y="155">EAST TN</text>
+            <text font-family="DM Mono,monospace" font-size="12" fill="#f2e8cc" text-anchor="middle" x="749" y="174">${pctStr('East TN')}</text>
+            <text font-family="Playfair Display,serif" font-size="13" font-weight="700" fill="#f2e8cc" text-anchor="middle" x="960" y="148">TRI-</text>
+            <text font-family="Playfair Display,serif" font-size="13" font-weight="700" fill="#f2e8cc" text-anchor="middle" x="960" y="168">CITIES</text>
+            <text font-family="DM Mono,monospace" font-size="12" fill="#f2e8cc" text-anchor="middle" x="960" y="187">${pctStr('Tri-Cities')}</text>
+            <text x="185" y="278" font-size="10" fill="#7a5a38" font-family="Libre Baskerville,serif">N ↑</text>
+          </svg>
+          <div style="display:flex;gap:20px;align-items:center;padding:12px 0 0;border-top:1px solid var(--border);margin-top:10px;font-size:12px;color:var(--label);">
+            <div style="display:flex;align-items:center;gap:7px;"><div style="width:13px;height:13px;border-radius:3px;background:#3a6b2e;"></div>Growing (+10%+)</div>
+            <div style="display:flex;align-items:center;gap:7px;"><div style="width:13px;height:13px;border-radius:3px;background:#b89020;"></div>Flat (±10%)</div>
+            <div style="display:flex;align-items:center;gap:7px;"><div style="width:13px;height:13px;border-radius:3px;background:#8b2e0a;"></div>Declining (–10%+)</div>
+            <div style="margin-left:auto;font-size:10px;color:var(--muted);">% vs. 2025 same period (96 days scaled)</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding-left:24px;display:flex;flex-direction:column;gap:12px;">
+        ${regions.map((r,i) => {
+          const col = COLOR[r.color];
+          const ps = r.pct >= 0 ? '+'+r.pct+'%' : r.pct+'%';
+          const vs = r.variance >= 0 ? '+'+r.variance : ''+r.variance;
+          const vc = r.color==='green'?'#3a6b2e':r.color==='yellow'?'#b89020':'#8b2e0a';
+          return `<div id="mcard-${r.region.replace(/ /g,'-')}" style="background:var(--cream);border:1px solid var(--border);border-left:3px solid ${col};padding:16px;cursor:pointer;" onclick="highlightMapCard('${r.region}')">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">
+              <div style="font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:${col};">${r.region}</div>
+              <div style="font-family:'DM Mono',monospace;font-size:12px;padding:2px 8px;border-radius:2px;background:${col}22;color:${col};">${ps}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;">
+              <div><div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;">2026 Cases</div><div style="font-family:'DM Mono',monospace;color:var(--gold);">${r.cases26}</div></div>
+              <div><div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;">Variance</div><div style="font-family:'DM Mono',monospace;color:${vc};">${vs}</div></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+    <div id="map-tooltip" style="position:fixed;display:none;background:#2c1a08;border:1px solid #8a6040;color:#e8d5a3;padding:12px 16px;border-radius:3px;font-size:12px;pointer-events:none;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,0.4);"></div>
+  `;
+
+  // Tooltip functions for inline map
+  window.showMapTooltip = function(e, region) {
+    const r = regions.find(x => x.region === region);
+    if (!r) return;
+    const col = COLOR[r.color];
+    const ps = r.pct >= 0 ? '+'+r.pct+'%' : r.pct+'%';
+    const vs = r.variance >= 0 ? '+'+r.variance : ''+r.variance;
+    document.getElementById('map-tooltip').innerHTML = `
+      <div style="font-family:'Playfair Display',serif;font-size:18px;color:${col};margin-bottom:8px;">${region}</div>
+      <div style="display:flex;justify-content:space-between;gap:16px;padding:4px 0;border-bottom:1px solid rgba(200,170,100,0.2);"><span style="color:#a08860;">2026 YTD</span><span style="font-family:'DM Mono',monospace;color:#e8b84b;">${r.cases26} cases</span></div>
+      <div style="display:flex;justify-content:space-between;gap:16px;padding:4px 0;border-bottom:1px solid rgba(200,170,100,0.2);"><span style="color:#a08860;">Variance</span><span style="font-family:'DM Mono',monospace;color:${col};">${vs} (${ps})</span></div>
+      <div style="display:flex;justify-content:space-between;gap:16px;padding:4px 0;"><span style="color:#a08860;">Accounts</span><span style="font-family:'DM Mono',monospace;">${r.accounts}</span></div>
+    `;
+    const tt = document.getElementById('map-tooltip');
+    tt.style.display = 'block';
+    tt.style.left = (e.clientX+14)+'px';
+    tt.style.top = (e.clientY-10)+'px';
+  };
+  window.hideMapTooltip = function() {
+    document.getElementById('map-tooltip').style.display = 'none';
+  };
+  window.highlightMapCard = function(region) {
+    document.querySelectorAll('[id^="mcard-"]').forEach(c => c.style.opacity='0.5');
+    const id = 'mcard-'+region.replace(/ /g,'-');
+    const el = document.getElementById(id);
+    if (el) { el.style.opacity='1'; setTimeout(()=>document.querySelectorAll('[id^="mcard-"]').forEach(c=>c.style.opacity='1'),1800); }
+  };
+}
+
+// ── Gone Dark table
+(function () {
+  const goneDark = [{"account": "COLONIAL HEIGHTS PACKAGE", "city": "KINGSPORT", "prior": 5.44, "prior_full": 20.67}, {"account": "GREENHILLS CORKDORKS WINE SPIRITS", "city": "NASHVILLE", "prior": 3.42, "prior_full": 13.0}, {"account": "LANGES LIQUORS", "city": "KNOXVILLE", "prior": 3.42, "prior_full": 13.0}, {"account": "SINKERS WINE & SPIRITS", "city": "NASHVILLE", "prior": 3.42, "prior_full": 13.0}, {"account": "PARKWAY WINE & LIQUOR", "city": "BRISTOL", "prior": 3.16, "prior_full": 12.0}, {"account": "BUSTERS LIQUOR STORE", "city": "MEMPHIS", "prior": 3.16, "prior_full": 12.0}, {"account": "GRAND CRU WINE & SPIRITS", "city": "NASHVILLE", "prior": 2.89, "prior_full": 11.0}, {"account": "PIT ROW WINE & LIQUOR", "city": "BLUFF CITY", "prior": 2.89, "prior_full": 11.0}, {"account": "BILLS PACKAGE STORE", "city": "CLARKSVILLE", "prior": 2.63, "prior_full": 10.0}, {"account": "LEGACY WINE AND SPIRITS", "city": "ROGERSVILLE", "prior": 2.63, "prior_full": 10.0}, {"account": "LUTHERS LIQUORS", "city": "NASHVILLE", "prior": 2.37, "prior_full": 9.0}, {"account": "GOOD TIMES WINE SPIRITS & BREW", "city": "CROSSVILLE", "prior": 2.37, "prior_full": 9.0}, {"account": "TOTAL WINE & MORE #2002", "city": "BRENTWOOD", "prior": 2.37, "prior_full": 9.0}, {"account": "LIGHTHOUSE WINE & LIQUOR", "city": "ELIZABETHTON", "prior": 2.37, "prior_full": 9.0}, {"account": "CHEERS WINES & SPIRITS", "city": "COLLIERVILLE", "prior": 2.24, "prior_full": 8.5}];
+  const tbody = document.getElementById('goneDarkBody');
+  goneDark.forEach(r => {
+    tbody.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td>
+          <div class="focus-acct-name" title="${r.account}">${r.account}</div>
+          <div class="focus-acct-city">${r.city}</div>
+        </td>
+        <td class="mono c-muted">${r.prior.toFixed(2)}</td>
+        <td><span class="pill pill-dark">DARK</span></td>
+      </tr>`);
+  });
+})();
+
+// ── Decliners table
+(function () {
+  const decliners = [{"account": "LIQUOR VAULT", "city": "KNOXVILLE", "cases_now": 3.0, "cases_prior": 9.99, "drop": -6.99, "pct": -70.0}, {"account": "RED CARPET LIQUORS", "city": "GALLATIN", "cases_now": 1.0, "cases_prior": 6.05, "drop": -5.05, "pct": -83.5}, {"account": "SMOKEY MOUNTAIN WINE & SPIRITS", "city": "KNOXVILLE", "cases_now": 1.0, "cases_prior": 4.21, "drop": -3.21, "pct": -76.2}, {"account": "FRANKLIN WINE & SPIRITS", "city": "FRANKLIN", "cases_now": 3.67, "cases_prior": 5.08, "drop": -1.42, "pct": -27.9}, {"account": "PARKWAY WINE AND SPIRITS", "city": "SPRING HILL", "cases_now": 1.0, "cases_prior": 2.37, "drop": -1.37, "pct": -57.8}, {"account": "THE FINCH", "city": "NASHVILLE", "cases_now": 16.0, "cases_prior": 17.36, "drop": -1.36, "pct": -7.8}, {"account": "LOG STILL DISTILLING", "city": "NEW HAVEN", "cases_now": 0.33, "cases_prior": 1.45, "drop": -1.11, "pct": -77.0}, {"account": "THE BOTTLE SHOP #0", "city": "GREENEVILLE", "cases_now": 1.0, "cases_prior": 2.06, "drop": -1.06, "pct": -51.5}, {"account": "AMERICAN BARREL", "city": "COLUMBIA", "cases_now": 1.0, "cases_prior": 1.97, "drop": -0.97, "pct": -49.3}, {"account": "RED SPIRITS & WINE", "city": "NASHVILLE", "cases_now": 3.0, "cases_prior": 3.95, "drop": -0.95, "pct": -24.0}, {"account": "JUNCTION LIQUORS BRENTWOOD", "city": "BRENTWOOD", "cases_now": 1.0, "cases_prior": 1.88, "drop": -0.88, "pct": -46.9}, {"account": "PARKWAY WINE AND SPIRITS", "city": "SMYRNA", "cases_now": 2.0, "cases_prior": 2.85, "drop": -0.85, "pct": -29.8}, {"account": "JUNCTION LIQUORS", "city": "SMYRNA", "cases_now": 1.0, "cases_prior": 1.84, "drop": -0.84, "pct": -45.7}, {"account": "RED CARPET LIQUORS #2", "city": "LEBANON", "cases_now": 1.0, "cases_prior": 1.84, "drop": -0.84, "pct": -45.7}, {"account": "PORTERS WINE AND LIQUOR", "city": "KINGSPORT", "cases_now": 1.0, "cases_prior": 1.58, "drop": -0.58, "pct": -36.6}];
+  const tbody = document.getElementById('declinersBody');
+  decliners.forEach(r => {
+    const pctStr = r.pct.toFixed(1) + '%';
+    tbody.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td>
+          <div class="focus-acct-name" title="${r.account}">${r.account}</div>
+          <div class="focus-acct-city">${r.city}</div>
+        </td>
+        <td class="mono c-gold">${r.cases_now.toFixed(2)}</td>
+        <td class="mono c-muted">${r.cases_prior.toFixed(2)}</td>
+        <td><span class="pill pill-red">${pctStr}</span></td>
+      </tr>`);
+  });
+})();
+</script>
+</body>
+</html>
